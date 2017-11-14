@@ -1,0 +1,31 @@
+
+body
+{
+	background-color: rgb(10,10,10);
+}
+
+
+.artBtn
+{
+	height: 10vh;
+	font-size: 6vh;
+	background-color: rgb(40,40,40);
+	color: rgb(200,10,10);
+	text-align: center;
+	-webkit-transition-duration: 0.2s; /*safari*/
+	transition-duration: 0.2s;
+	margin-left: 4vw;
+	margin-right: 4vw;
+	width: 90vw;
+	margin-top: 1vh;
+	margin-bottom: 1vh;
+	border: 0.5vh solid rgb(210,210,210);
+	border-radius: 3vw;
+}
+.artBtn:focus, .artBtn:hover
+{
+	outline:0;
+	color: rgb(0,150,0);
+	background-color: rgb(200,200,200);
+}
+
