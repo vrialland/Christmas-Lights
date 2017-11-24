@@ -30,12 +30,12 @@ def wheel(pos, bri = 1):
 #------------------------------------------------
 class PatternBase(object):
 	def __init__(self, numPixels):
-		self.clear()
 		self.numPx = numPixels
 		self.state = 0
 		self.loopCount = 0
 		self.strip_order = range(numPixels)
 		shuffle(self.strip_order)
+		self.clear()
 
 	def clear(self):
 		pass
@@ -100,7 +100,7 @@ class Classic(PatternBase):
 		x = self.strip_order[idx] + (int(random() * 100) % 5)
 		if random() > 0.05 and idx < len(self.dots):
 			x = self.dots[idx][0]
-		strip.setPixelColor(x, Color(250,220,50))
+		strip.setPixelColor(x, Color(220,180,50))
 		return [x, int(random() * 100)]
 
 	def _step(self, state, strip):
@@ -183,8 +183,8 @@ class Wind(PatternBase):
 	def _step(self, state, strip):
 		for i in range(len(self.wisp)):
 			if self.wisp[i][0] > self.wisp[i][1] + 1:
-				strip.setPixelColor(self.wisp[i][0], 0x0)
-				strip.setPixelColor(self.wisp[i][0]+1, 0x0)
+				strip._led_data[self.wisp[i][0]] = 0x0
+				strip._led_data[self.wisp[i][0]+1] = 0x0
 				if state != 3:
 					self.wisp[i] = self.newWisp()
 				else:
@@ -195,11 +195,11 @@ class Wind(PatternBase):
 					break
 			else:
 				c = max(0,int(255.0 *  ((0.5 - abs( ((1.0 * self.wisp[i][1]-self.wisp[i][0])/(1.0 * self.wisp[i][1] - self.wisp[i][2])) - 0.5))*2.0)**4.0))
-				strip.setPixelColor(self.wisp[i][0] - 1, 0x0)
-				strip.setPixelColor(self.wisp[i][0], Color(int(c * self.wisp[i][3]/4),int(c * self.wisp[i][3]/4),c/4))
+				strip._led_data[self.wisp[i][0] - 1] = 0x0
+				strip._led_data[self.wisp[i][0]] = Color(int(c * self.wisp[i][3]/4),int(c * self.wisp[i][3]/4),c/4)
 				self.wisp[i][0] += 1
-				strip.setPixelColor(self.wisp[i][0], Color(int(c * self.wisp[i][3]),int(c * self.wisp[i][3]),c))
-				strip.setPixelColor(self.wisp[i][0]+1, Color(int(c * self.wisp[i][3]/4),int(c * self.wisp[i][3]/4),c/4))
+				strip._led_data[self.wisp[i][0]] = Color(int(c * self.wisp[i][3]),int(c * self.wisp[i][3]),c)
+				strip._led_data[self.wisp[i][0]+1] = Color(int(c * self.wisp[i][3]/4),int(c * self.wisp[i][3]/4),c/4)
 
 		if state == 1:
 			if len(self.wisp) < 15:
@@ -215,17 +215,19 @@ class Wind(PatternBase):
 class Rainbow(PatternBase):
 	def __init__(self, numPixels):
 		super(Rainbow, self).__init__(numPixels)
+		self.buff = [0] * numPixels
 
 	def clear(self):
 		self.i = 0
 		self.cleared = 0
+		shuffle(self.strip_order)
 
 	def _step(self, state, strip):
 		for t in range(10):
 			if self.i >= len(self.strip_order):
 				self.i = 0
-				shuffle(self.strip_order)
 				if state == 1:
+					self.buff = strip._led_data
 					print("---rainbow full")
 					return 2
 			if self.i == 0 and state == 3:
@@ -236,7 +238,7 @@ class Rainbow(PatternBase):
 				self.cleared += 1
 			pos = self.strip_order[self.i]
 			color = wheel((pos + int(time()*30)) % 256) if state != 3 else 0x0
-			strip.setPixelColor(pos, color)
+			self.buff[pos] = color
 			self.i += 1
 
 		return state
@@ -254,6 +256,10 @@ class Blur(PatternBase):
 		self.i = 0
 		self.cleared = 0
 		self.baseC = int(random()*1024)%256
+		self.dots = []#[self.newDot() for x in range(15)]
+
+	def newDot(self):
+		return [int(random()*900)%self.numPx, wheel((self.baseC + int(random() * 40))%256, random()**2)]
 
 	def _step(self, state, strip):
 		if state == 1:
@@ -271,26 +277,40 @@ class Blur(PatternBase):
 					return 0
 				self.cleared += 1
 			pos = self.strip_order[self.i]
-			c0 = self.buff[pos-1]
-			c2 = self.buff[(pos+1)%self.numPx]
-			c = ((((c0&0xff0000)+(c2&0xff0000))>>1)&0xff0000) | ((((c0&0xff00)+(c2&0xff00))>>1)&0xff00) | ((((c0&0xff)+(c2&0xff))>>1)&0xff)
-			self.buff[pos] = c if state != 3 else 0
+			if state != 3:
+				c0 = self.buff[pos-1]
+				# c1 = self.buff[pos]
+				c2 = self.buff[(pos+1)%self.numPx]
+				# c = ((((c0&0xff0000)+(c1&0xff0000)+(c2&0xff0000))/3)&0xff0000) |\
+				#     ((((c0&  0xff00)+(c1&  0xff00)+(c2&  0xff00))/3)&0xff00) |\
+				#     ((((c0&    0xff)+(c1&    0xff)+(c2&    0xff))/3)&0xff)
+				c = ((((c0&0xff0000)+(c2&0xff0000))>>1)&0xff0000) |\
+				    ((((c0&  0xff00)+(c2&  0xff00))>>1)&0xff00) |\
+				    ((((c0&    0xff)+(c2&    0xff))>>1)&0xff)
+				self.buff[pos] = c
+			else:
+				self.buff[pos] = 0
 			self.i += 1
-		if self.loopCount % 3 == 0:
-			i = int(random()*900)%(self.numPx-2)
-			c = wheel((self.baseC + int(random() * 20))%256, random()**4)
-			self.buff[i] = c
-			self.buff[i+1] = c
-			self.buff[i+2] = c
-		if self.loopCount % 30 == 0:
-			c = wheel(int(random()*1024)%256)
-			i = int(random()*900)%(self.numPx-2)
-			self.buff[i] = c
-			self.buff[i+1] = c
-			self.buff[i+2] = c
-		if self.loopCount % 100 == 0 and random() < 0.1:
-			self.baseC = int(random()*1024)%256
-			print("---blur base color change %d"%self.baseC)
+		if state != 3:
+			# update base dots
+			for t in self.dots:
+				self.buff[t[0]] = t[1]
+			# add dots
+			if len(self.dots) < 10 and self.loopCount % 10 == 0:
+				self.dots.append(self.newDot())
+			# base color
+			if self.loopCount % 10 == 0:
+				i = int(random()*1000)%len(self.dots)
+				self.dots[i] = self.newDot()
+			# color burst
+			if self.loopCount % 30 == 0:
+				c = wheel(int(random()*1024)%256)
+				i = int(random()*900)%(self.numPx-4)
+				self.buff[i:i+4] = [c]*4
+			# change base color
+			if self.loopCount % 100 == 0 and random() < 0.1:
+				self.baseC = int(random()*1024)%256
+				print("---blur base color change %d"%self.baseC)
 		return state
 
 
@@ -333,15 +353,15 @@ class Fairy(PatternBase):
 					break
 			else:
 				if self.wisp[i][0] - self.wisp[i][3] * self.wisp[i][1] >= 0 and self.wisp[i][0] - self.wisp[i][3] * self.wisp[i][1] < self.numPx:
-					strip.setPixelColor(self.wisp[i][0] - self.wisp[i][3] * self.wisp[i][1], 0x0)
+					strip._led_data[self.wisp[i][0] - self.wisp[i][3] * self.wisp[i][1]] = 0x0
 				if self.wisp[i][0] >= 0 and self.wisp[i][0] < self.numPx:
-					strip.setPixelColor(self.wisp[i][0], Color(255,255,255))
+					strip._led_data[self.wisp[i][0]] = Color(255,255,255)
 				for x in self.wisp[i][4][0:self.wisp[i][3]/3]:
 					x = x * self.wisp[i][1]
 					if self.wisp[i][0] - x >= 0 and self.wisp[i][0] - x < self.numPx:
 						b = (((self.wisp[i][3]+1)-abs(x))/float(self.wisp[i][3]-1))**3 * self.strip_b[(self.wisp[i][0] + x)%self.numPx]
 						c = wheel((self.wisp[i][2] + self.strip_c[(self.wisp[i][0] + x)%self.numPx]) % 256, b)
-						strip.setPixelColor(self.wisp[i][0] - x, c)
+						strip._led_data[self.wisp[i][0] - x] = c
 				self.wisp[i][0] += self.wisp[i][1]
 		if state == 1:
 			if len(self.wisp) < 3:
@@ -395,7 +415,7 @@ patterns = [
 	[-1     , Rainbow(300)   , 1] ,
 	[-1     , Candycane(300) , 0] ,
 	[-1     , Classic(300)   , 0] ,
-	[-1     , Wind(300)      , 1] ,
+	[-1     , Wind(300)      , 0] ,
 	[-1     , Twinkle(300)   , 0] ,
 	[-1     , Fairy(300)     , 0] ,
 	[-1     , Blur(300)      , 1] ,
