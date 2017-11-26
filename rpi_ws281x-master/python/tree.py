@@ -77,7 +77,7 @@ class Twinkle(PatternBase):
 					self.stars[i][2] = [min(255, int(c**1.2+ random() * 5.0)) for c in x[2]]
 			strip.setPixelColor(x[0], Color(*x[2]))
 		if state == 1:
-			if len(self.stars) < 30:
+			if len(self.stars) < 50:
 				if self.loopCount % 2 == 0:
 					self.stars.append([int(random() * self.numPx), 1, [0,0,0]])
 			else:
@@ -90,14 +90,14 @@ class Twinkle(PatternBase):
 class Classic(PatternBase):
 	def __init__(self, numPixels):
 		super(Classic, self).__init__(numPixels)
-		self.strip_order = range(0, numPixels, 5)
+		self.strip_order = range(0, numPixels, 4)
 		shuffle(self.strip_order)
 
 	def clear(self):
 		self.dots = []
 
 	def newDot(self, strip, idx):
-		x = self.strip_order[idx] + (int(random() * 100) % 5)
+		x = self.strip_order[idx] + (int(random() * 100) % 4)
 		if random() > 0.05 and idx < len(self.dots):
 			x = self.dots[idx][0]
 		strip.setPixelColor(x, Color(220,180,50))
@@ -119,7 +119,7 @@ class Classic(PatternBase):
 			else:
 				self.dots[i][1] -= 1
 		if state == 1:
-			if len(self.dots) < 60:
+			if len(self.dots) < 75:
 				self.dots.append(self.newDot(strip, len(self.dots)))
 			else:
 				print("---classic full")
@@ -202,8 +202,8 @@ class Wind(PatternBase):
 				strip._led_data[self.wisp[i][0]+1] = Color(int(c * self.wisp[i][3]/4),int(c * self.wisp[i][3]/4),c/4)
 
 		if state == 1:
-			if len(self.wisp) < 15:
-				if self.loopCount % 4 == 0:
+			if len(self.wisp) < 20:
+				if self.loopCount % 6 == 0:
 					self.wisp.append(self.newWisp())
 			else:
 				print("---wind full")
@@ -364,8 +364,8 @@ class Fairy(PatternBase):
 						strip._led_data[self.wisp[i][0] - x] = c
 				self.wisp[i][0] += self.wisp[i][1]
 		if state == 1:
-			if len(self.wisp) < 3:
-				if (self.spawn > 50 and random() < 0.02) or len(self.wisp) == 0:
+			if len(self.wisp) < 6:
+				if (self.spawn > 50 and random() < 0.1) or len(self.wisp) == 0:
 					self.wisp.append(self.newWisp())
 					self.spawn = 0
 				self.spawn += 1
