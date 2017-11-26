@@ -65,20 +65,26 @@ class Twinkle(PatternBase):
 							return 0
 						break
 					else:
-						self.stars[i][0] = int(random() * self.numPx)
+						while True:
+							idx = int(random() * 900) % self.numPx
+							for st in self.stars:
+								if idx == st[0]:
+									continue
+							break
+						self.stars[i][0] = idx
 						self.stars[i][1] = 1
 				else:
-					self.stars[i][2] = [max(0, c*7/8) for c in x[2]]
+					self.stars[i][2] = [max(0, c*9/10) for c in x[2]]
 			else:
 				# brightening
 				if x[2] == [255,255,255]:
 					self.stars[i][1] = 0
 				else:
-					self.stars[i][2] = [min(255, int(c**1.2+ random() * 5.0)) for c in x[2]]
+					self.stars[i][2] = [min(255, int(c + (random()**3)*25)) for c in x[2]]
 			strip.setPixelColor(x[0], Color(*x[2]))
 		if state == 1:
 			if len(self.stars) < 50:
-				if self.loopCount % 2 == 0:
+				if self.loopCount % 4 == 0:
 					self.stars.append([int(random() * self.numPx), 1, [0,0,0]])
 			else:
 				print("---twinkle full")
