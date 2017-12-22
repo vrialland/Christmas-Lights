@@ -95,6 +95,7 @@ class Twinkle(PatternBase):
 
 class Classic(PatternBase):
 	def __init__(self, numPixels):
+		numPixels = numPixels - (numPixels % 4)   # makes sure that numPixels can be divided by 4, e.g, numPixels = 150 wouldn't work 
 		super(Classic, self).__init__(numPixels)
 		self.strip_order = range(0, numPixels, 4)
 		shuffle(self.strip_order)
